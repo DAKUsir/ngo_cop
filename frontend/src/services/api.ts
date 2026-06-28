@@ -60,7 +60,7 @@ export const analyticsApi = {
 };
 
 export const reportApi = {
-  generate: (data: { upload_id: string; title?: string; org_name?: string; period?: string }) =>
+  generate: (data: { upload_id: string; title?: string; org_name?: string; period?: string; tone?: string }) =>
     api.post("/api/report/generate", data),
   list: () => api.get("/api/report/list"),
   download: (reportId: string) =>
