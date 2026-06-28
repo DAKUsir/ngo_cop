@@ -35,6 +35,7 @@ app.add_middleware(
 import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
+from fastapi import Request
 
 # Include routers (API routes must be registered before the catch-all)
 app.include_router(auth.router,      prefix="/api")
@@ -50,12 +51,24 @@ if os.path.isdir(FRONTEND_OUT):
     app.mount("/_next", StaticFiles(directory=os.path.join(FRONTEND_OUT, "_next")), name="next")
     
     @app.get("/{full_path:path}")
-    async def serve_frontend(full_path: str):
+    async def serve_frontend(full_path: str, request: Request):
+        # Next.js App Router client-side navigation fetches routes with RSC header
+        is_rsc = request.headers.get("RSC") == "1"
+
         # 1. Exact file (e.g., favicon.ico)
         exact_path = os.path.join(FRONTEND_OUT, full_path)
         if os.path.isfile(exact_path):
             return FileResponse(exact_path)
-        
+            
+        # If client-side routing asks for RSC payload, return the .txt file
+        if is_rsc:
+            rsc_path = os.path.join(FRONTEND_OUT, full_path + ".txt")
+            if os.path.isfile(rsc_path):
+                return FileResponse(rsc_path)
+            rsc_index = os.path.join(FRONTEND_OUT, full_path, "index.txt")
+            if os.path.isfile(rsc_index):
+                return FileResponse(rsc_index)
+
         # 2. HTML file (e.g., /dashboard -> dashboard.html)
         html_path = os.path.join(FRONTEND_OUT, full_path + ".html")
         if os.path.isfile(html_path):
